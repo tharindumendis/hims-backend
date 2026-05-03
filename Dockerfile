@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
 # 1. Update system packages to patch vulnerabilities
-# 2. Install libaio1 (required for Oracle)
+# 2. Install libaio1t64 (required for Oracle)
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y libaio1 && \
