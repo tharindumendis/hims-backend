@@ -1,2 +1,4 @@
 fastapi
 uvicorn[standard]
+oracledb>=1.4.0
+python-dotenv>=0.19.0
