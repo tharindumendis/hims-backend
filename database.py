@@ -1,18 +1,9 @@
-"""
-Production-level Oracle Database Connection Pool Management
-Handles connection pooling, lifecycle management, and error handling
-"""
-
 import os
 import socket
 import logging
 from contextlib import contextmanager
 from typing import Optional, Generator
-
-try:
-    import oracledb
-except ImportError:
-    import cx_Oracle as oracledb
+import oracledb
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,10 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class OracleConnectionPool:
-    """
-    Production-level Oracle connection pool with lifecycle management,
-    error handling, and monitoring capabilities.
-    """
 
     _instance: Optional['OracleConnectionPool'] = None
     _pool: Optional[oracledb.ConnectionPool] = None
@@ -130,10 +117,7 @@ class OracleConnectionPool:
                 min=5,                          # Minimum 5 connections
                 max=20,                         # Maximum 20 connections
                 increment=2,                    # Create 2 connections at a time
-                # timeout=30,                     # 30-second timeout for getting a connection
-                # session_timeout=1800,           # 30-minute idle timeout
                 max_lifetime_session=3600,      # 1-hour max session lifetime
-                # threaded=True,                  # Multi-threaded mode
                 wait_timeout=10,                # Wait up to 10 seconds if no conn available
             )
 
@@ -326,3 +310,24 @@ async def close_db():
         logger.info("Database pool closed successfully")
     except Exception as e:
         logger.error(f"Failed to close database pool: {str(e)}")
+
+
+def fetch_data(cursor, obj_name: str, args: list, is_func: bool = False):
+    """Utility to execute Oracle Procedures/Functions and return dict lists."""
+    if is_func:
+        res_cursor = cursor.callfunc(obj_name, oracledb.CURSOR, args)
+    else:
+        p_cursor = cursor.var(oracledb.CURSOR)
+        call_args = args + [p_cursor]
+        cursor.callproc(obj_name, call_args)
+        res_cursor = p_cursor.getvalue()
+    
+    if not res_cursor:
+        return []
+        
+    try:
+        cols = [col[0].lower() for col in res_cursor.description]
+        return [dict(zip(cols, row)) for row in res_cursor.fetchall()]
+    finally:
+        if res_cursor:
+            res_cursor.close()

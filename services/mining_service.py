@@ -1,21 +1,21 @@
 import pandas as pd
+import oracledb
 from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
-from database import get_db_pool
+from database import get_db_pool, fetch_data
 
 def get_association_rules(min_support=0.05, min_confidence=0.3):
     pool = get_db_pool()
-    query = """
-        SELECT prescription_id, medicine_name
-        FROM vw_patient_prescription_history
-    """
     try:
-        rows = pool.execute_query(query)
-        if not rows:
+        with pool.get_connection() as conn:
+            cursor = conn.cursor()
+            rows_dict = fetch_data(cursor, 'proc_get_apriori_data', [])
+            
+        if not rows_dict:
             return []
-        
-        # Convert to DataFrame
-        df = pd.DataFrame(rows, columns=['prescription_id', 'medicine_name'])
+            
+        # Convert dict list to DataFrame
+        df = pd.DataFrame(rows_dict)
         
         baskets = df.groupby('prescription_id')['medicine_name'].apply(list).tolist()
         te = TransactionEncoder()
@@ -45,27 +45,19 @@ def get_association_rules(min_support=0.05, min_confidence=0.3):
 
 def get_monthly_consumption_trend():
     pool = get_db_pool()
-    query = """
-        SELECT
-          m.medicine_name,
-          EXTRACT(YEAR FROM t.txn_date) AS yr,
-          EXTRACT(MONTH FROM t.txn_date) AS mo,
-          SUM(t.quantity) AS total_consumed
-        FROM STOCK_TRANSACTION t
-        JOIN MEDICINE m ON t.medicine_id = m.medicine_id
-        WHERE t.txn_type = 'OUT'
-        GROUP BY m.medicine_name, EXTRACT(YEAR FROM t.txn_date), EXTRACT(MONTH FROM t.txn_date)
-        ORDER BY yr, mo, m.medicine_name
-    """
     try:
-        rows = pool.execute_query(query)
+        with pool.get_connection() as conn:
+            cursor = conn.cursor()
+            rows_dict = fetch_data(cursor, 'proc_get_monthly_trend', [])
+            
         results = []
-        for row in rows:
+        for row in rows_dict:
+            # Need to carefully handle datatypes since they might come as floats or strings
             results.append({
-                "medicine_name": row[0],
-                "year": int(row[1]),
-                "month": int(row[2]),
-                "total_consumed": int(row[3])
+                "medicine_name": row["medicine_name"],
+                "year": int(row["yr"]),
+                "month": int(row["mo"]),
+                "total_consumed": int(row["total_consumed"])
             })
         return results
     except Exception as e:

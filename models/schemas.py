@@ -113,6 +113,84 @@ class PrescriptionCreate(PrescriptionBase):
 class PrescriptionOut(PrescriptionBase):
     prescription_id: int
     prescribed_date: datetime
+    
+class PrescriptionFullOut(PrescriptionBase):
+    prescription_id: int
+    prescribed_date: datetime
+    patient_fname: str
+    patient_lname: str
+    doctor_fname: str
+    doctor_lname: str
+    items: List[PrescriptionItemOut]
+    appt_id: int
+    patient_id: int
+
+## Oracle DB Return Type 
+class PrescriptionRow(BaseModel):
+    prescription_id: int
+    record_id: int
+    doctor_id: int
+    status: str
+    prescribed_date: datetime
+    appt_id: int
+    patient_id: int
+    patient_fname: str
+    patient_lname: str
+    doctor_fname: str
+    doctor_lname: str
+    medicine_id: int
+    dosage: str
+    duration_days: int
+    quantity: int
+    item_id: int | None = None  # if available
+
+# Output model: grouped prescription
+class PrescriptionFullOut(BaseModel):
+    prescription_id: int
+    record_id: int
+    doctor_id: int
+    status: str
+    prescribed_date: datetime
+    appt_id: int
+    patient_id: int
+    patient_fname: str
+    patient_lname: str
+    doctor_fname: str
+    doctor_lname: str
+    items: List[PrescriptionItemOut]
+
+    @classmethod
+    def from_rows(cls, rows: List[PrescriptionRow]):
+        if not rows:
+            raise ValueError("No rows found")
+
+        header = rows[0]
+        items = [
+            PrescriptionItemOut(
+                item_id=row.item_id or 0,
+                prescription_id=row.prescription_id,
+                medicine_id=row.medicine_id,
+                dosage=row.dosage,
+                duration_days=row.duration_days,
+                quantity=row.quantity
+            )
+            for row in rows
+        ]
+
+        return cls(
+            prescription_id=header.prescription_id,
+            record_id=header.record_id,
+            doctor_id=header.doctor_id,
+            status=header.status,
+            prescribed_date=header.prescribed_date,
+            appt_id=header.appt_id,
+            patient_id=header.patient_id,
+            patient_fname=header.patient_fname,
+            patient_lname=header.patient_lname,
+            doctor_fname=header.doctor_fname,
+            doctor_lname=header.doctor_lname,
+            items=items
+        )
 
 # ----------------- STOCK & TRANSACTION -----------------
 class StockOut(BaseModel):
