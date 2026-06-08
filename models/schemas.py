@@ -203,7 +203,7 @@ class StockOut(BaseModel):
 
 class StockTransactionBase(BaseModel):
     medicine_id: int
-    txn_type: str = Field(..., pattern="^(IN|OUT)$")
+    txn_type: str = Field(..., pattern="^(INN|OUT)$")
     quantity: int
     reference_id: Optional[int] = None
     performed_by: Optional[str] = None

@@ -36,7 +36,8 @@ def create_doctor(doctor_data: dict):
             h_date,
             out_id
         ])
-        doctor_id = int(out_id.getvalue()[0])
+        val = out_id.getvalue()
+        doctor_id = int(val[0]) if isinstance(val, list) else int(val)
         conn.commit()
         return doctor_id
 

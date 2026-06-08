@@ -40,30 +40,43 @@ def get_low_stock_medicines():
         cursor = conn.cursor()
         try:
             return fetch_data(cursor, 'proc_get_low_stock', [])
-        except Exception:
+        except Exception as e:
+            print(f"Error in getting low stock medicines: {e}")
             return []
 
 def get_stock_txn_by_id(txn_id: int):
     pool = get_db_pool()
     with pool.get_connection() as conn:
         cursor = conn.cursor()
-        rows = fetch_data(cursor, 'proc_get_stock_txn', [txn_id])
+        rows = fetch_data(cursor, 'fn_get_stock_txn', [txn_id],True)
         return rows[0] if rows else None
 
 def create_stock_transaction(txn: StockTransactionBase):
     pool = get_db_pool()
     with pool.get_connection() as conn:
         cursor = conn.cursor()
-        out_id = cursor.var(oracledb.NUMBER)
-        
-        cursor.callproc('proc_create_stock_txn', [
-            txn.medicine_id,
-            txn.txn_type,
-            txn.quantity,
-            txn.reference_id,
-            txn.performed_by,
-            out_id
-        ])
-        txn_id = int(out_id.getvalue())
+        txn_id = cursor.callfunc('fn_create_stock_txn', oracledb.NUMBER, [txn.medicine_id, txn.txn_type, txn.quantity, txn.reference_id, txn.performed_by])
         conn.commit()
-    return get_stock_txn_by_id(txn_id)
+        print(f"Transaction ID: {txn_id}")
+        print(f"Medicine ID: {txn.medicine_id}")
+        print(f"Transaction Type: {txn.txn_type}")
+        print(f"Quantity: {txn.quantity}")
+        print(f"Reference ID: {txn.reference_id}")
+        print(f"Performed By: {txn.performed_by}")
+        return get_stock_txn_by_id(txn_id)
+
+        
+    #     out_id = cursor.var(oracledb.NUMBER)
+
+        
+    #     cursor.callproc('proc_create_stock_txnn', [
+    #         txn.medicine_id,
+    #         txn.txn_type,
+    #         txn.quantity,
+    #         txn.reference_id,
+    #         txn.performed_by,
+    #         out_id
+    #     ])
+    #     txn_id = int(out_id.getvalue())
+    #     conn.commit()
+    # return get_stock_txn_by_id(txn_id)

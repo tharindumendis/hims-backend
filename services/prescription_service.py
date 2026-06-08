@@ -86,6 +86,8 @@ def get_prescription_full_by_id(presc_id: int):
     with pool.get_connection() as conn:
         cursor = conn.cursor()
         rows = fetch_data(cursor, 'fn_get_prescription_full', [presc_id], is_func=True)
+        if not rows:
+            return None
         row_models = [PrescriptionRow(**row) for row in rows]
         return PrescriptionFullOut.from_rows(row_models)
 
