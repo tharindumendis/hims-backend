@@ -34,7 +34,7 @@ def test_inventory_medicines_flow(client):
         "medicine_id": medicine_id,
         "txn_type": "INN",
         "quantity": 100,
-        "reference_id": None,
+        "reference_id": 1,
         "performed_by": "test_runner"
     }
     txn_resp = client.post("/inventory/transactions", json=txn_payload)

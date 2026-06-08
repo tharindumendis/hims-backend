@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import oracledb
 from database import get_db_pool, fetch_data
 from models.schemas import MedicineCreate, StockTransactionBase
@@ -49,21 +50,23 @@ def get_stock_txn_by_id(txn_id: int):
     with pool.get_connection() as conn:
         cursor = conn.cursor()
         rows = fetch_data(cursor, 'fn_get_stock_txn', [txn_id],True)
+        print("ROWS:", rows)
         return rows[0] if rows else None
 
 def create_stock_transaction(txn: StockTransactionBase):
     pool = get_db_pool()
+    print(f"Creating stock transaction: {txn}")
     with pool.get_connection() as conn:
         cursor = conn.cursor()
         txn_id = cursor.callfunc('fn_create_stock_txn', oracledb.NUMBER, [txn.medicine_id, txn.txn_type, txn.quantity, txn.reference_id, txn.performed_by])
         conn.commit()
-        print(f"Transaction ID: {txn_id}")
-        print(f"Medicine ID: {txn.medicine_id}")
-        print(f"Transaction Type: {txn.txn_type}")
-        print(f"Quantity: {txn.quantity}")
-        print(f"Reference ID: {txn.reference_id}")
-        print(f"Performed By: {txn.performed_by}")
-        return get_stock_txn_by_id(txn_id)
+        print("TXN ID:", txn_id)
+        result = get_stock_txn_by_id(txn_id)
+
+        if result is None:
+            raise HTTPException(status_code=500, detail="Transaction not found after insert")
+
+        return result
 
         
     #     out_id = cursor.var(oracledb.NUMBER)

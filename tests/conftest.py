@@ -93,7 +93,16 @@ MOCK_DATA = {
             "unit_price": 10.0
         }
     },
-    "transactions": {}
+    "transactions": [{
+        999:{
+            "txn_id": 999,
+            "medicine_id": 999,
+            "txn_type": "INN",
+            "quantity": 100,
+            "reference_id": 1,
+            "performed_by": "test_runner",
+            "txn_date": datetime.datetime.now()
+        }}]
 }
 
 # Subclass int to support index lookup like doctor_id = int(out_id.getvalue()[0])
@@ -462,6 +471,24 @@ if TEST_MODE != "integration":
                 return [MOCK_DATA["medicines"][med_id]]
             return []
         elif name == 'proc_get_stock_txn':
+            txn_id = args[0]
+            if txn_id in MOCK_DATA["transactions"]:
+                return [MOCK_DATA["transactions"][txn_id]]
+            return []
+        elif name == 'fn_create_stock_txn':
+                new_id = len(MOCK_DATA["transactions"]) + 1001
+                args[-1].val = IndexableInt(new_id)
+                MOCK_DATA["transactions"][new_id] = {
+                    "txn_id": new_id,
+                    "medicine_id": args[0],
+                    "txn_type": args[1],
+                    "quantity": args[2],
+                    "reference_id": args[3],
+                    "performed_by": args[4],
+                    "txn_date": datetime.datetime.now()
+                }
+                return [new_id]
+        elif name == 'fn_get_stock_txn':
             txn_id = args[0]
             if txn_id in MOCK_DATA["transactions"]:
                 return [MOCK_DATA["transactions"][txn_id]]
