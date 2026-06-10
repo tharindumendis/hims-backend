@@ -6,6 +6,9 @@ import logging
 #database connection imports
 from database import init_db, close_db, get_db_pool
 
+# routers
+from routers import patients, doctors, appointments, prescriptions, inventory, analytics
+
 load_dotenv()
 
 # Configure logging
@@ -36,6 +39,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title="Healthcare Inventory Management System")
+
+app.include_router(patients.router)
+app.include_router(doctors.router)
+app.include_router(appointments.router)
+app.include_router(prescriptions.router)
+app.include_router(inventory.router)
+app.include_router(analytics.router)
 
 
 @app.get("/")
