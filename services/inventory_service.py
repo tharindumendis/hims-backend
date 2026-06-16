@@ -69,17 +69,34 @@ def create_stock_transaction(txn: StockTransactionBase):
         return result
 
         
-    #     out_id = cursor.var(oracledb.NUMBER)
+def get_stock():
+    pool = get_db_pool()
+    with pool.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                s.stock_id,
+                s.medicine_id,
+                m.medicine_name,
+                m.generic_name,
+                m.category,
+                s.quantity_available,
+                m.reorder_level,
+                s.expiry_date,
+                s.storage_location,
+                s.last_updated,
+                fn_get_stock_status(m.medicine_id) AS stock_status
+            FROM STOCK s
+            JOIN MEDICINE m ON s.medicine_id = m.medicine_id
+            ORDER BY m.medicine_name
+        """)
+        cols = [col[0].lower() for col in cursor.description]
+        return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
-        
-    #     cursor.callproc('proc_create_stock_txnn', [
-    #         txn.medicine_id,
-    #         txn.txn_type,
-    #         txn.quantity,
-    #         txn.reference_id,
-    #         txn.performed_by,
-    #         out_id
-    #     ])
-    #     txn_id = int(out_id.getvalue())
-    #     conn.commit()
-    # return get_stock_txn_by_id(txn_id)
+def get_expiring_stock():
+    pool = get_db_pool()
+    with pool.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vw_expiring_stock")
+        cols = [col[0].lower() for col in cursor.description]
+        return [dict(zip(cols, row)) for row in cursor.fetchall()]

@@ -93,8 +93,8 @@ MOCK_DATA = {
             "unit_price": 10.0
         }
     },
-    "transactions": [{
-        999:{
+    "transactions": {
+        999: {
             "txn_id": 999,
             "medicine_id": 999,
             "txn_type": "INN",
@@ -102,7 +102,8 @@ MOCK_DATA = {
             "reference_id": 1,
             "performed_by": "test_runner",
             "txn_date": datetime.datetime.now()
-        }}]
+        }
+    }
 }
 
 # Subclass int to support index lookup like doctor_id = int(out_id.getvalue()[0])
@@ -136,9 +137,51 @@ if TEST_MODE != "integration":
         def __init__(self):
             self.arraysize = 100
             self.description = [("COL1",)]
+            self._query = ""
         def execute(self, query, params=None):
-            pass
+            self._query = query.lower()
+            if "vw_expiring_stock" in self._query:
+                self.description = [
+                    ("MEDICINE_ID",), ("MEDICINE_NAME",), ("BATCH_NUMBER",),
+                    ("EXPIRY_DATE",), ("QUANTITY_AVAILABLE",), ("DAYS_UNTIL_EXPIRY",),
+                    ("MANUFACTURER",)
+                ]
+            elif "vw_supplier_performance" in self._query:
+                self.description = [
+                    ("SUPPLIER_ID",), ("SUPPLIER_NAME",), ("CONTACT_PERSON",),
+                    ("SUPPLIER_PHONE",), ("TOTAL_ORDERS",), ("COMPLETED_ORDERS",),
+                    ("ON_TIME_DELIVERY_RATE",), ("TOTAL_ORDER_VALUE",), ("AVG_DELIVERY_TIME_DAYS",)
+                ]
+            elif "vw_monthly_stock_consumption" in self._query:
+                if "txn_year as year" in self._query:
+                    self.description = [
+                        ("MEDICINE_NAME",), ("YEAR",), ("MONTH",), ("TOTAL_CONSUMED",)
+                    ]
+                else:
+                    self.description = [
+                        ("MEDICINE_ID",), ("MEDICINE_NAME",), ("CATEGORY",),
+                        ("TXN_YEAR",), ("TXN_MONTH",), ("TOTAL_OUT_QUANTITY",), ("TOTAL_IN_QUANTITY",)
+                    ]
+            elif "stock s" in self._query and "medicine m" in self._query:
+                self.description = [
+                    ("STOCK_ID",), ("MEDICINE_ID",), ("MEDICINE_NAME",), ("GENERIC_NAME",),
+                    ("CATEGORY",), ("QUANTITY_AVAILABLE",), ("REORDER_LEVEL",),
+                    ("EXPIRY_DATE",), ("STORAGE_LOCATION",), ("LAST_UPDATED",), ("STOCK_STATUS",)
+                ]
+            else:
+                self.description = [("COL1",)]
         def fetchall(self):
+            if "vw_expiring_stock" in self._query:
+                return [(999, "Test Medicine", "N/A", datetime.date(2026, 6, 20), 10, 10, "N/A")]
+            elif "vw_supplier_performance" in self._query:
+                return [(1, "Test Supplier", "Test Person", "0771234567", 5, 4, 80.0, 1500.0, 3)]
+            elif "vw_monthly_stock_consumption" in self._query:
+                if "txn_year as year" in self._query:
+                    return [("Test Medicine", 2026, 6, 100)]
+                else:
+                    return [(999, "Test Medicine", "Test Category", 2026, 6, 100, 200)]
+            elif "stock s" in self._query and "medicine m" in self._query:
+                return [(999, 999, "Test Medicine", "Test Generic", "Test Category", 100, 50, datetime.date(2026, 12, 31), "Aisle 1", datetime.datetime.now(), "ADEQUATE")]
             return []
         def var(self, type_val, *args, **kwargs):
             return MockVar(IndexableInt(999))
@@ -251,6 +294,19 @@ if TEST_MODE != "integration":
                     MOCK_DATA["prescriptions"][presc_id]["status"] = "Dispensed"
             return args
         def callfunc(self, name, return_type, args=None):
+            name = name.lower()
+            if name == 'fn_create_stock_txn':
+                new_id = len(MOCK_DATA["transactions"]) + 1001
+                MOCK_DATA["transactions"][new_id] = {
+                    "txn_id": new_id,
+                    "medicine_id": args[0],
+                    "txn_type": args[1],
+                    "quantity": args[2],
+                    "reference_id": args[3],
+                    "performed_by": args[4],
+                    "txn_date": datetime.datetime.now()
+                }
+                return new_id
             return []
         def close(self):
             pass

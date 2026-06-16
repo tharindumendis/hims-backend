@@ -48,18 +48,41 @@ def get_monthly_consumption_trend():
     try:
         with pool.get_connection() as conn:
             cursor = conn.cursor()
-            rows_dict = fetch_data(cursor, 'proc_get_monthly_trend', [])
-            
-        results = []
-        for row in rows_dict:
-            # Need to carefully handle datatypes since they might come as floats or strings
-            results.append({
-                "medicine_name": row["medicine_name"],
-                "year": int(row["yr"]),
-                "month": int(row["mo"]),
-                "total_consumed": int(row["total_consumed"])
-            })
-        return results
+            cursor.execute("""
+                SELECT 
+                    medicine_name,
+                    txn_year AS year,
+                    txn_month AS month,
+                    total_out_quantity AS total_consumed
+                FROM vw_monthly_stock_consumption
+                ORDER BY year ASC, month ASC, medicine_name ASC
+            """)
+            cols = [col[0].lower() for col in cursor.description]
+            return [dict(zip(cols, row)) for row in cursor.fetchall()]
     except Exception as e:
         print(f"Error in trend: {e}")
+        return []
+
+def get_monthly_stock_consumption():
+    pool = get_db_pool()
+    try:
+        with pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM vw_monthly_stock_consumption")
+            cols = [col[0].lower() for col in cursor.description]
+            return [dict(zip(cols, row)) for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Error in monthly stock consumption: {e}")
+        return []
+
+def get_supplier_performance():
+    pool = get_db_pool()
+    try:
+        with pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM vw_supplier_performance")
+            cols = [col[0].lower() for col in cursor.description]
+            return [dict(zip(cols, row)) for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Error in supplier performance: {e}")
         return []

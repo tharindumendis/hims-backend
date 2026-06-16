@@ -239,6 +239,48 @@ class StockTransactionOut(StockTransactionBase):
     txn_id: int
     txn_date: datetime
 
+class StockDetailsOut(BaseModel):
+    stock_id: int
+    medicine_id: int
+    medicine_name: str
+    generic_name: Optional[str] = None
+    category: str
+    quantity_available: int
+    reorder_level: int
+    expiry_date: Optional[date] = None
+    storage_location: Optional[str] = None
+    last_updated: datetime
+    stock_status: str
+
+class ExpiringStockOut(BaseModel):
+    medicine_id: int
+    medicine_name: str
+    batch_number: str
+    expiry_date: date
+    quantity_available: int
+    days_until_expiry: int
+    manufacturer: str
+
+class MonthlyStockConsumptionOut(BaseModel):
+    medicine_id: int
+    medicine_name: str
+    category: str
+    txn_year: int
+    txn_month: int
+    total_out_quantity: int
+    total_in_quantity: int
+
+class SupplierPerformanceOut(BaseModel):
+    supplier_id: int
+    supplier_name: str
+    contact_person: Optional[str] = None
+    supplier_phone: str
+    total_orders: int
+    completed_orders: int
+    on_time_delivery_rate: float
+    total_order_value: float
+    avg_delivery_time_days: int
+
 # ----------------- SUPPLIER & PO -----------------
 class SupplierBase(BaseModel):
     supplier_name: str
