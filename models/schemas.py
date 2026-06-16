@@ -2,6 +2,33 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import date, datetime
 
+# ----------------- USER (for authentication) -----------------
+class UserBase(BaseModel):
+    username: str
+    role: str = Field(..., pattern="^(RECEPTIONIST|DOCTOR|PHARMACIST|ADMIN)$")
+    is_active: bool = True
+
+class UserCreate(UserBase):
+    password: str
+
+class UserOut(UserBase):
+    user_id: int
+    created_at: datetime
+
+class UserInDB(UserBase):
+    user_id: int
+    hashed_password: str
+    created_at: datetime
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
+
+
 # ----------------- PATIENT -----------------
 class PatientBase(BaseModel):
     first_name: str

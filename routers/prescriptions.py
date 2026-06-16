@@ -1,11 +1,16 @@
 from models.schemas import PrescriptionFullOut
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Any
 from models.schemas import MedicalRecordCreate, MedicalRecordOut, PrescriptionCreate, PrescriptionOut
 from services import prescription_service
+from dependencies.auth_dependency import RoleChecker
 import oracledb
 
-router = APIRouter(prefix="/prescriptions", tags=["Prescriptions & Records"])
+router = APIRouter(
+    prefix="/prescriptions", 
+    tags=["Prescriptions & Records"],
+    dependencies=[Depends(RoleChecker(["DOCTOR", "PHARMACIST", "ADMIN"]))]
+)
 
 @router.post("/record", response_model=MedicalRecordOut)
 def create_medical_record(record: MedicalRecordCreate):

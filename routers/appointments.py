@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from typing import List
+
 from models.schemas import AppointmentCreate, AppointmentOut
+from dependencies.auth_dependency import RoleChecker
 from services import appointment_service
 import oracledb
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
-@router.post("/", response_model=AppointmentOut)
+@router.post("/", response_model=AppointmentOut, dependencies=[Depends(RoleChecker(["RECEPTIONIST", "ADMIN"]))])
 def create_appointment(appt: AppointmentCreate):
     try:
         appt_id = appointment_service.create_appointment(appt)
@@ -15,7 +17,7 @@ def create_appointment(appt: AppointmentCreate):
         error, = e.args
         raise HTTPException(status_code=400, detail=error.message)
 
-@router.get("/patient/{patient_id}", response_model=List[AppointmentOut])
+@router.get("/patient/{patient_id}", response_model=List[AppointmentOut], dependencies=[Depends(RoleChecker(["RECEPTIONIST", "DOCTOR", "ADMIN"]))])
 def get_appointments_by_patient(patient_id: int):
     return appointment_service.get_appointments_by_patient(patient_id)
 
