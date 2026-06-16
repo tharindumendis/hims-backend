@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     username: str
     role: str = Field(..., pattern="^(RECEPTIONIST|DOCTOR|PHARMACIST|ADMIN)$")
     is_active: bool = True
+    doctor_id: Optional[int] = None
 
 class UserCreate(UserBase):
     password: str
@@ -27,6 +28,17 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
     role: Optional[str] = None
+    doctor_id: Optional[int] = None
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+class UpdateUserRoleRequest(BaseModel):
+    role: str = Field(..., pattern="^(RECEPTIONIST|DOCTOR|PHARMACIST|ADMIN)$")
+
+class UpdateUserStatusRequest(BaseModel):
+    is_active: bool
 
 
 # ----------------- PATIENT -----------------

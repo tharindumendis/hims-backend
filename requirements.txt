@@ -10,3 +10,5 @@ mlxtend
 scikit-learn
 python-jose
 passlib
+python-multipart
+bcrypt

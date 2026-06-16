@@ -25,6 +25,8 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up - initializing database pool...")
     try:
         await init_db()
+        from routers.auth import seed_admin_user
+        seed_admin_user()
     except Exception as e:
         logger.error(f"Failed to initialize database pool: {str(e)}")
         raise

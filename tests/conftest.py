@@ -103,7 +103,8 @@ MOCK_DATA = {
             "performed_by": "test_runner",
             "txn_date": datetime.datetime.now()
         }
-    }
+    },
+    "users": {}
 }
 
 # Subclass int to support index lookup like doctor_id = int(out_id.getvalue()[0])
@@ -138,9 +139,50 @@ if TEST_MODE != "integration":
             self.arraysize = 100
             self.description = [("COL1",)]
             self._query = ""
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
         def execute(self, query, params=None):
             self._query = query.lower()
-            if "vw_expiring_stock" in self._query:
+            self._params = params
+            if "insert into users" in self._query:
+                # INSERT INTO users (username, hashed_password, role, is_active, doctor_id) VALUES (:1, :2, :3, :4, :5)
+                username = params[0]
+                hashed_pwd = params[1]
+                role = params[2]
+                is_active = params[3]
+                doctor_id = params[4] if len(params) > 4 else None
+                if doctor_id is not None and doctor_id not in MOCK_DATA["doctors"]:
+                    class MockError:
+                        def __init__(self):
+                            self.code = 2291
+                            self.message = "ORA-02291: integrity constraint (FK_USER_DOCTOR) violated - parent key not found"
+                    raise oracledb.DatabaseError(MockError())
+                new_id = len(MOCK_DATA["users"]) + 1001
+                MOCK_DATA["users"][username] = {
+                    "user_id": new_id,
+                    "username": username,
+                    "hashed_password": hashed_pwd,
+                    "role": role,
+                    "is_active": is_active,
+                    "created_at": datetime.datetime.now(),
+                    "doctor_id": doctor_id
+                }
+            elif "update users" in self._query:
+                if "hashed_password =" in self._query:
+                    hashed_pwd, username = params
+                    if username in MOCK_DATA["users"]:
+                        MOCK_DATA["users"][username]["hashed_password"] = hashed_pwd
+                elif "is_active =" in self._query:
+                    is_active, username = params
+                    if username in MOCK_DATA["users"]:
+                        MOCK_DATA["users"][username]["is_active"] = is_active
+                elif "role =" in self._query:
+                    role, username = params
+                    if username in MOCK_DATA["users"]:
+                        MOCK_DATA["users"][username]["role"] = role
+            elif "vw_expiring_stock" in self._query:
                 self.description = [
                     ("MEDICINE_ID",), ("MEDICINE_NAME",), ("BATCH_NUMBER",),
                     ("EXPIRY_DATE",), ("QUANTITY_AVAILABLE",), ("DAYS_UNTIL_EXPIRY",),
@@ -168,10 +210,62 @@ if TEST_MODE != "integration":
                     ("CATEGORY",), ("QUANTITY_AVAILABLE",), ("REORDER_LEVEL",),
                     ("EXPIRY_DATE",), ("STORAGE_LOCATION",), ("LAST_UPDATED",), ("STOCK_STATUS",)
                 ]
+            elif "from users" in self._query:
+                self.description = [
+                    ("USER_ID",), ("USERNAME",), ("HASHED_PASSWORD",),
+                    ("ROLE",), ("IS_ACTIVE",), ("CREATED_AT",), ("DOCTOR_ID",)
+                ]
             else:
                 self.description = [("COL1",)]
+        def fetchone(self):
+            res = self.fetchall()
+            return res[0] if res else None
         def fetchall(self):
-            if "vw_expiring_stock" in self._query:
+            if "from users" in self._query:
+                if "count(*)" in self._query:
+                    username = self._params[0] if self._params else "admin"
+                    exists = 1 if username in MOCK_DATA["users"] else 0
+                    if username == "admin" and "admin" not in MOCK_DATA["users"]:
+                        exists = 1
+                    return [(exists,)]
+                if "where username =" in self._query:
+                    username = self._params[0] if self._params else None
+                    if username == "admin" and "admin" not in MOCK_DATA["users"]:
+                        from core.security import get_password_hash
+                        MOCK_DATA["users"]["admin"] = {
+                            "user_id": 1,
+                            "username": "admin",
+                            "hashed_password": get_password_hash("admin123"),
+                            "role": "ADMIN",
+                            "is_active": 1,
+                            "created_at": datetime.datetime.now(),
+                            "doctor_id": None
+                        }
+                    user = MOCK_DATA["users"].get(username)
+                    if user:
+                        return [(
+                            user["user_id"],
+                            user["username"],
+                            user["hashed_password"],
+                            user["role"],
+                            user["is_active"],
+                            user["created_at"],
+                            user.get("doctor_id")
+                        )]
+                    return []
+                if "is_active" in self._query and "hashed_password" not in self._query:
+                    username = self._params[0] if self._params else None
+                    if username == "admin" and "admin" not in MOCK_DATA["users"]:
+                        return [(1,)]
+                    user = MOCK_DATA["users"].get(username)
+                    if user:
+                        return [(user["is_active"],)]
+                    return []
+                return [
+                    (u["user_id"], u["username"], u["role"], u["is_active"], u["created_at"], u.get("doctor_id"))
+                    for u in MOCK_DATA["users"].values()
+                ]
+            elif "vw_expiring_stock" in self._query:
                 return [(999, "Test Medicine", "N/A", datetime.date(2026, 6, 20), 10, 10, "N/A")]
             elif "vw_supplier_performance" in self._query:
                 return [(1, "Test Supplier", "Test Person", "0771234567", 5, 4, 80.0, 1500.0, 3)]
