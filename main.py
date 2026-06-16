@@ -7,7 +7,7 @@ import logging
 from database import init_db, close_db, get_db_pool
 
 # routers
-from routers import patients, doctors, appointments, prescriptions, inventory, analytics
+from routers import patients, doctors, appointments, prescriptions, inventory, analytics, auth
 
 load_dotenv()
 
@@ -46,6 +46,7 @@ app.include_router(appointments.router)
 app.include_router(prescriptions.router)
 app.include_router(inventory.router)
 app.include_router(analytics.router)
+app.include_router(auth.router)
 
 
 @app.get("/")

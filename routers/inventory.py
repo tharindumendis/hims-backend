@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from dependencies.auth_dependency import RoleChecker
 from models.schemas import MedicineCreate, MedicineOut, StockTransactionBase, StockTransactionOut, StockDetailsOut, ExpiringStockOut
 from services import inventory_service
 
-router = APIRouter(prefix="/inventory", tags=["Inventory"])
+router = APIRouter(prefix="/inventory", tags=["Inventory"], dependencies=[Depends(RoleChecker(["PHARMACIST", "ADMIN"]))])
 
 @router.get("/medicines", response_model=List[MedicineOut])
 def get_all_medicines():
