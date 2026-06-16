@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from dependencies.auth_dependency import RoleChecker
 from services import mining_service
 
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+router = APIRouter(prefix="/analytics", tags=["Analytics"], dependencies=[Depends(RoleChecker(["ADMIN"]))])
 
 @router.get("/association-rules")
 def get_association_rules(min_support: float = 0.05, min_confidence: float = 0.3):
