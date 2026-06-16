@@ -57,13 +57,13 @@ Stored procedures are used for complex transactions that modify multiple tables.
 
 Functions return a single scalar value. In FastAPI, invoke them using `cursor.callfunc()`.
 
-### `fn_get_patient_age`
-**Purpose:** Calculates patient age based on `date_of_birth`.
-- **Input:** `p_patient_id` (NUMBER)
+### `fn_get_age`
+**Purpose:** Calculates age based on `date_of_birth`.
+- **Input:** `p_date_of_birth` (DATE)
 - **Returns:** NUMBER
 - **Backend Invocation:**
   ```python
-  age = cursor.callfunc('fn_get_patient_age', oracledb.NUMBER, [patient_id])
+  age = cursor.callfunc('fn_get_age', oracledb.NUMBER, [date_of_birth])
   ```
 
 ### `fn_get_stock_status`
