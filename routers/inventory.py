@@ -4,7 +4,7 @@ from dependencies.auth_dependency import RoleChecker
 from models.schemas import MedicineCreate, MedicineOut, StockTransactionBase, StockTransactionOut, StockDetailsOut, ExpiringStockOut
 from services import inventory_service
 
-router = APIRouter(prefix="/inventory", tags=["Inventory"], dependencies=[Depends(RoleChecker(["PHARMACIST", "ADMIN"]))])
+router = APIRouter(prefix="/inventory", tags=["Inventory"], dependencies=[Depends(RoleChecker(["PHARMACIST", "ADMIN", "DOCTOR"]))])
 
 @router.get("/medicines", response_model=List[MedicineOut])
 def get_all_medicines():
